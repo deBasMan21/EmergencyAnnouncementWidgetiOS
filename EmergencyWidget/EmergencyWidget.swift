@@ -34,7 +34,7 @@ struct Provider: IntentTimelineProvider {
                 entries.append(entry)
             }
 
-            let timeline = Timeline(entries: entries, policy: .atEnd)
+            let timeline = Timeline(entries: entries, policy: .never)
             completion(timeline)
         }
     }
@@ -84,6 +84,9 @@ struct EmergencyWidgetEntryView : View {
                     alignment: .top).padding()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .onAppear{
+            WidgetCenter.shared.reloadAllTimelines()
+        }
     }
 }
 
