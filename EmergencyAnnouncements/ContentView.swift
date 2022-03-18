@@ -13,51 +13,47 @@ struct ContentView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            ZStack{
-                HStack {
-                    Spacer()
-                    Text("Meldingen in Brabant")
-                        .bold()
-                        .frame(height: 8)
-                    Spacer()
-                }
-                HStack{
-                    Spacer()
-                    
-                    Image("refresh")
-                        .onTapGesture{
-                            Task{
-                                announcements = []
-                                announcements = try await apiCall()
-                            }
-                        }
-                }
+            HStack {
+                Spacer()
+                Text("Meldingen in Brabant")
+                    .bold()
+                    .frame(height: 8)
+                Spacer()
             }
             .padding()
                 .background(Color.blue)
             
-            ScrollView{
-                LazyVStack {
-                    ForEach(announcements){ item in
-                        Link(destination: URL(string: item.link)!, label: {
-                            VStack(alignment: .leading){
-                                HStack{
-                                    Image(item.image)
-                                        .resizable()
-                                        .scaledToFit()
-                                        .frame(width: 44, height: 44, alignment: .center)
-                                    
-                                    VStack{
-                                        Text(item.title).foregroundColor(getColorForEmergency(emer: item.type))
-                                        Text(item.description).foregroundColor(.accentColor)
-                                    }
-                                }.padding(2)
-                            }
-
-                            Divider()
-                        })
-                        
+            
+            
+            List(announcements){item in
+                Link(destination: URL(string: item.link)!, label: {
+                    HStack{
+                        Spacer()
+                        VStack{
+                            Image(item.image)
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 44, height: 44, alignment: .center)
+                            
+                            Text(item.title)
+                                .foregroundColor(getColorForEmergency(emer: item.type))
+                                .multilineTextAlignment(.center)
+                            
+                            Text(item.description)
+                                .foregroundColor(.accentColor)
+                                .multilineTextAlignment(.center)
+                            
+                            Text(item.pubDate)
+                                .foregroundColor(.accentColor)
+                                .multilineTextAlignment(.center)
+                        }
+                        Spacer()
                     }
+                })
+                        
+            }.refreshable {
+                Task{
+                    announcements = try await apiCall()
                 }
             }
             
@@ -99,8 +95,13 @@ func apiCall() async throws -> [Announcement] {
     var annList : [Announcement] = []
     
     for item in items.all {
+        var date = item["pubDate"].element?.text ?? "No date"
+        if date != "No date" {
+            date = date.components(separatedBy: ",")[1]
+            date = date.components(separatedBy: "+")[0]
+        }
         
-        var ann = Announcement(title: item["title"].element?.text ?? "No title", description: item["description"].element?.text ?? "No description", link: item["link"].element?.text ?? "No link", pubDate: item["pubDate"].element?.text ?? "No date", speed: .unknown, type: .other, image: "help-circle")
+        var ann = Announcement(title: item["title"].element?.text ?? "No title", description: item["description"].element?.text ?? "No description", link: item["link"].element?.text ?? "No link", pubDate: date, speed: .unknown, type: .other, image: "help-circle")
         
         if ann.title.contains("a1") {
             ann.speed = .a1
