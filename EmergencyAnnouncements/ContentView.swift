@@ -13,15 +13,28 @@ struct ContentView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            HStack {
-                Spacer()
-                Text("Meldingen in Brabant")
-                    .bold()
-                    .frame(height: 8)
-                Spacer()
+            ZStack{
+                HStack {
+                    Spacer()
+                    Text("Meldingen in Brabant")
+                        .bold()
+                        .frame(height: 8)
+                    Spacer()
+                }
+                HStack{
+                    Spacer()
+                    
+                    Image("refresh")
+                        .onTapGesture{
+                            Task{
+                                announcements = []
+                                announcements = try await apiCall()
+                            }
+                        }
+                }
             }
             .padding()
-            .background(Color.blue)
+                .background(Color.blue)
             
             ScrollView{
                 LazyVStack {
@@ -64,6 +77,8 @@ struct ContentView: View {
             return .yellow
         } else if emer == .police {
             return .blue
+        } else if emer == .trauma {
+            return .green
         } else {
             return .cyan
         }
@@ -99,12 +114,15 @@ func apiCall() async throws -> [Announcement] {
             ann.speed = .p_2
         }
         
-        if ann.description.contains("Ambulance") {
+        if ann.description.contains("Ambulance") || ann.speed == .a1 || ann.speed == .a2 || ann.speed == .b2{
             ann.type = .ambulance
             ann.image = "ambulance"
         } else if ann.description.contains("Brand") || ann.speed == .p_2 || ann.speed == .p_1 {
             ann.type = .firefighters
             ann.image = "firefighter-helmet"
+        } else if ann.description.contains("Trauma") || ann.description.contains("heli") {
+            ann.type = .trauma
+            ann.image = "heli"
         }
         
         annList.append(ann)
@@ -138,4 +156,5 @@ enum EmergencyType {
     case police
     case firefighters
     case other
+    case trauma
 }
