@@ -15,40 +15,53 @@ struct ContentView: View {
         VStack(spacing: 0) {
             HStack {
                 Spacer()
+                
                 Text("Meldingen in Brabant")
                     .bold()
                     .frame(height: 8)
+                
                 Spacer()
             }
             .padding()
                 .background(Color.blue)
             
-            
-            
             List(announcements){item in
                 Link(destination: URL(string: item.link)!, label: {
                     HStack{
                         Spacer()
+                        
                         VStack{
                             Image(item.image)
                                 .resizable()
                                 .scaledToFit()
                                 .frame(width: 44, height: 44, alignment: .center)
+                                .accessibility(hidden: true)
                             
                             Text(item.title)
                                 .foregroundColor(getColorForEmergency(emer: item.type))
                                 .multilineTextAlignment(.center)
+                                .accessibility(hidden: true)
+                                
                             
                             Text(item.description)
                                 .foregroundColor(.accentColor)
                                 .multilineTextAlignment(.center)
+                                .accessibility(hidden: true)
                             
                             Text(item.pubDate)
                                 .foregroundColor(.accentColor)
                                 .multilineTextAlignment(.center)
+                                .accessibility(hidden: true)
                         }
+                        
                         Spacer()
-                    }
+                    }.accessibilityElement(children: .ignore)
+                        .accessibilityLabel("Melding")
+                        .accessibilityCustomContent("Hulpdienst", item.type.toString())
+                        .accessibilityCustomContent("Titel", item.title)
+                        .accessibilityCustomContent("Description", item.description)
+                        .accessibilityCustomContent("Date and time", item.pubDate)
+                        .accessibilityInputLabels([item.type.toString(), item.title])
                 })
                         
             }.refreshable {
@@ -57,6 +70,11 @@ struct ContentView: View {
                 }
             }
             
+        }.accessibilityAction(.magicTap) {
+            print("magic button")
+            Task{
+                announcements = try await apiCall()
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onAppear{
@@ -101,7 +119,7 @@ func apiCall() async throws -> [Announcement] {
             date = date.components(separatedBy: "+")[0]
         }
         
-        var ann = Announcement(title: item["title"].element?.text ?? "No title", description: item["description"].element?.text ?? "No description", link: item["link"].element?.text ?? "No link", pubDate: date, speed: .unknown, type: .other, image: "help-circle")
+        var ann = Announcement(title: item["title"].element?.text ?? "No title", description: item["description"].element?.text ?? "No description", link: item["link"].element?.text ?? "No link", pubDate: date, speed: .unknown, type: .other, image: "help-circle", accessibilityTag: "Onbekende hulpdienst")
         
         if ann.title.contains("a1") {
             ann.speed = .a1
@@ -126,6 +144,8 @@ func apiCall() async throws -> [Announcement] {
             ann.image = "heli"
         }
         
+        ann.accessibilityTag = String("\(ann.type.toString()) naar \(ann.title) met spoedniveau \(ann.speed)")
+        
         annList.append(ann)
     }
     
@@ -141,6 +161,7 @@ struct Announcement: Identifiable {
     var speed : Speed
     var type : EmergencyType
     var image : String
+    var accessibilityTag: String
 }
 
 enum Speed {
@@ -158,4 +179,19 @@ enum EmergencyType {
     case firefighters
     case other
     case trauma
+    
+    func toString() -> String {
+        switch self{
+        case .ambulance:
+            return "Ambulance"
+        case .firefighters:
+            return "Brandweer"
+        case .police:
+            return "Politie"
+        case .trauma:
+            return "Trauma helikopter"
+        case .other:
+            return "Onbekend"
+        }
+    }
 }
